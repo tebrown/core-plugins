@@ -114,10 +114,20 @@ class LDAPAuthentication {
         }
         if ($servers) {
             $hosts = array();
-            foreach ($servers as $h)
+            foreach ($servers as $h) {
+
+                if ($dn = $this->getConfig()->get('bind_dn')) {
+                    $pw = Crypto::decrypt($this->getConfig()->get('bind_pw'),
+                        SECRET_SALT, $this->getConfig()->getNamespace());
+                }
                 $hosts[] = array('host'=>$h);
+                $hosts[] = array('host'=>$h, 'binddn'=>$dn, 'bindpw'=>$pw);
+                unset($pw);
+            }
+
             return $hosts;
         }
+
     }
 
     function getConnection() {
@@ -148,7 +158,9 @@ class LDAPAuthentication {
             $r = $c->bind();
             if (!PEAR::isError($r))
                 return $c;
-        }
+        }	
+	error_log("Could not connect to server");
+	return False;
     }
 
     /**
